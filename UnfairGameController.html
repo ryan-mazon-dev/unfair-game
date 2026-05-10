@@ -1,0 +1,788 @@
+<!doctype html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    :root {
+      --bg: #111111;
+      --panel: #1f1f1f;
+      --panel2: #2c2c2c;
+      --gold: #f6c85f;
+      --text: #ffffff;
+      --muted: rgba(255,255,255,.72);
+      --green: #15803d;
+      --red: #b91c1c;
+      --blue: #2563eb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .shell {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      gap: 12px;
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      color: var(--gold);
+      letter-spacing: .02em;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 13px;
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--gold);
+      color: #111;
+    }
+
+    button.secondary {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.22);
+    }
+
+    button.good { background: var(--green); color: white; }
+    button.bad { background: var(--red); color: white; }
+    button.blue { background: var(--blue); color: white; }
+
+    button:disabled {
+      opacity: .48;
+      cursor: not-allowed;
+    }
+
+    .view {
+      flex: 1;
+      min-height: 0;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .hidden { display: none !important; }
+
+    .setup {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 12px;
+      padding: 14px;
+    }
+
+    .setup-row {
+      display: grid;
+      grid-template-columns: 1fr 200px;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .teams {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border-radius: 9px;
+      border: 1px solid rgba(255,255,255,.25);
+      padding: 8px 9px;
+      font-size: 14px;
+      background: #f9fafb;
+      color: #111827;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 48px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .question-table-wrap {
+      min-height: 0;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #181818;
+    }
+
+    th, td {
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      padding: 8px;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #0f0f0f;
+      color: var(--gold);
+      z-index: 2;
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    td.num {
+      width: 42px;
+      color: var(--gold);
+      font-weight: 900;
+      text-align: center;
+      padding-top: 18px;
+    }
+
+    td.points {
+      width: 90px;
+    }
+
+    .setup-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .game {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      gap: 12px;
+    }
+
+    .scorebar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .scores {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .score {
+      background: var(--panel2);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 12px;
+      padding: 8px 11px;
+      min-width: 105px;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .score.active {
+      background: var(--gold);
+      color: #111;
+    }
+
+    .turn {
+      color: var(--gold);
+      font-weight: 900;
+    }
+
+    .board {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .tile {
+      border-radius: 16px;
+      background: #000000;
+      border: 2px solid rgba(255,255,255,.82);
+      color: var(--text);
+      font-size: clamp(28px, 5vw, 64px);
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform .08s ease, filter .08s ease, opacity .12s ease;
+      user-select: none;
+    }
+
+    .tile:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.2);
+    }
+
+    .tile.used {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .question-screen, .answer-screen {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 28px;
+      gap: 18px;
+    }
+
+    .screen-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--gold);
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .big-text {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: clamp(32px, 5vw, 70px);
+      line-height: 1.12;
+      font-weight: 900;
+      padding: 20px;
+    }
+
+    .answer-text {
+      color: var(--gold);
+    }
+
+    .answer-actions {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      align-items: end;
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .shell { height: auto; min-height: 100vh; }
+      .top { grid-template-columns: 1fr; }
+      .view { min-height: 680px; }
+      .teams { grid-template-columns: 1fr 1fr; }
+      .setup-row { grid-template-columns: 1fr; }
+      .answer-actions { grid-template-columns: 1fr 1fr; }
+      .board { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(5, 120px); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+    <div class="top">
+      <div>
+        <h1 id="mainTitle">Unfair Game Controller</h1>
+        <div id="mainSub" class="sub">Setup is simple: teams, questions, answers, points. No JSON goblin scroll.</div>
+      </div>
+      <div class="tabs">
+        <button class="secondary" onclick="showSetup()">Setup</button>
+        <button onclick="showGame()">Play</button>
+      </div>
+    </div>
+
+    <div class="view">
+      <div id="setupView" class="setup">
+        <div class="setup-row">
+          <label>
+            Game title
+            <input id="titleInput" value="THE UNFAIR GAME!">
+          </label>
+          <label>
+            Number of teams
+            <input id="teamCountInput" type="number" min="1" max="12" value="2" onchange="renderTeamInputs()">
+          </label>
+        </div>
+
+        <div id="teamInputs" class="teams"></div>
+
+        <div class="question-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Question</th>
+                <th>Answer</th>
+                <th>Points</th>
+              </tr>
+            </thead>
+            <tbody id="questionRows"></tbody>
+          </table>
+        </div>
+
+        <div class="setup-actions">
+          <div class="small">
+            This updates the existing Unfair Game template: board tiles 1-20, question slides, answer slides, reveal buttons, return buttons, and point labels.
+          </div>
+          <div>
+            <button class="secondary" onclick="loadData()">Reload Saved</button>
+            <button class="secondary" onclick="loadFromSlides()">Load From Current Slides</button>
+            <button class="secondary" onclick="diagnoseLayout()">Diagnose Layout</button>
+            <button onclick="saveSetup()">Save Setup + Update Slides</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="gameView" class="game hidden">
+        <div class="scorebar">
+          <div>
+            <div id="turnText" class="turn"></div>
+            <div class="small">Click a number, show the question, reveal the answer, then score it.</div>
+          </div>
+          <div id="scores" class="scores"></div>
+        </div>
+
+        <div id="board" class="board"></div>
+
+        <div id="questionScreen" class="question-screen hidden">
+          <div class="screen-head">
+            <div id="questionLabel"></div>
+            <div id="questionHiddenPoints">Points hidden until answer</div>
+          </div>
+          <div id="questionText" class="big-text"></div>
+          <div class="footer-actions">
+            <button class="secondary" onclick="showBoard()">Return to Home</button>
+            <button onclick="showAnswer()">Reveal Answer</button>
+          </div>
+        </div>
+
+        <div id="answerScreen" class="answer-screen hidden">
+          <div class="screen-head">
+            <div id="answerLabel"></div>
+            <div id="answerPoints"></div>
+          </div>
+          <div id="answerText" class="big-text answer-text"></div>
+
+          <div class="answer-actions">
+            <label>
+              Answering team
+              <select id="teamSelect"></select>
+            </label>
+            <label>
+              Points to apply
+              <input id="deltaInput" type="number" value="0">
+            </label>
+            <label>
+              Pass points to
+              <select id="passSelect"></select>
+            </label>
+            <button class="good" onclick="setCorrect()">Correct</button>
+            <button class="bad" onclick="setWrong()">Wrong</button>
+            <button class="secondary" onclick="showQuestion()">Back to Question</button>
+            <button class="secondary" onclick="markUsedNoScore()">No Score / Mark Used</button>
+            <button onclick="applyScore()">Apply Score + Home</button>
+            <button class="secondary" onclick="showBoard()">Cancel</button>
+            <button class="bad" onclick="resetGame()">Reset Game</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let config = null;
+  let state = null;
+  let activeQuestion = null;
+  let savedConfigExists = false;
+
+  function loadData() {
+    google.script.run
+      .withSuccessHandler(data => {
+        config = data.config;
+        state = data.state;
+        savedConfigExists = data.hasSavedConfig;
+        fillSetupFromConfig();
+        if (data.configSource === 'slides' && !savedConfigExists) {
+          document.getElementById('mainSub').textContent =
+            'Prefilled from the current slide deck. Review/edit, then save setup.';
+        }
+
+        if (savedConfigExists && state) {
+          renderGame();
+          showGame();
+        } else {
+          showSetup();
+        }
+      })
+      .withFailureHandler(showError)
+      .getUnfairGameData();
+  }
+
+  function fillSetupFromConfig() {
+    document.getElementById('titleInput').value = config.title || 'THE UNFAIR GAME!';
+    document.getElementById('teamCountInput').value = Math.max(1, config.teams.length);
+    renderTeamInputs();
+
+    config.teams.forEach((team, i) => {
+      const input = document.getElementById(`team-${i}`);
+      if (input) input.value = team;
+    });
+
+    renderQuestionRows();
+
+    config.questions.forEach((q, i) => {
+      document.getElementById(`q-${i}`).value = q.question || '';
+      document.getElementById(`a-${i}`).value = q.answer || '';
+      document.getElementById(`p-${i}`).value = q.points ?? 0;
+    });
+  }
+
+  function renderTeamInputs() {
+    const count = Math.max(1, Math.min(12, Number(document.getElementById('teamCountInput').value || 1)));
+    const wrap = document.getElementById('teamInputs');
+
+    const oldValues = [];
+    wrap.querySelectorAll('input').forEach(input => oldValues.push(input.value));
+
+    wrap.innerHTML = '';
+
+    for (let i = 0; i < count; i++) {
+      const label = document.createElement('label');
+      label.innerHTML = `Team ${i + 1}<input id="team-${i}" value="${escapeHtml(oldValues[i] || (config?.teams?.[i]) || `Team ${i + 1}`)}">`;
+      wrap.appendChild(label);
+    }
+  }
+
+  function renderQuestionRows() {
+    const tbody = document.getElementById('questionRows');
+    tbody.innerHTML = '';
+
+    for (let i = 0; i < 20; i++) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="num">${i + 1}</td>
+        <td><textarea id="q-${i}" placeholder="Question ${i + 1}"></textarea></td>
+        <td><textarea id="a-${i}" placeholder="Answer ${i + 1}"></textarea></td>
+        <td class="points"><input id="p-${i}" type="number" value="0"></td>
+      `;
+      tbody.appendChild(row);
+    }
+  }
+
+  function gatherSetup() {
+    const teamCount = Number(document.getElementById('teamCountInput').value || 1);
+    const teams = [];
+
+    for (let i = 0; i < teamCount; i++) {
+      teams.push(document.getElementById(`team-${i}`).value || `Team ${i + 1}`);
+    }
+
+    const questions = [];
+    for (let i = 0; i < 20; i++) {
+      questions.push({
+        number: i + 1,
+        question: document.getElementById(`q-${i}`).value,
+        answer: document.getElementById(`a-${i}`).value,
+        points: Number(document.getElementById(`p-${i}`).value || 0)
+      });
+    }
+
+    return {
+      title: document.getElementById('titleInput').value || 'THE UNFAIR GAME!',
+      teams,
+      questions
+    };
+  }
+
+  function saveSetup() {
+    const payload = gatherSetup();
+
+    google.script.run
+      .withSuccessHandler(data => {
+        config = data.config;
+        state = data.state;
+        savedConfigExists = true;
+        alert(data.message || 'Saved.');
+        renderGame();
+        showGame();
+      })
+      .withFailureHandler(showError)
+      .saveUnfairGameSetup(payload);
+  }
+
+  function showSetup() {
+    document.getElementById('setupView').classList.remove('hidden');
+    document.getElementById('gameView').classList.add('hidden');
+  }
+
+  function showGame() {
+    if (!savedConfigExists || !state) {
+      showSetup();
+      return;
+    }
+    document.getElementById('setupView').classList.add('hidden');
+    document.getElementById('gameView').classList.remove('hidden');
+    renderGame();
+    showBoard();
+  }
+
+  function renderGame() {
+    document.getElementById('mainTitle').textContent = config.title || 'Unfair Game';
+    renderScores();
+    renderBoard();
+    renderTeamSelectors();
+  }
+
+  function renderScores() {
+    const scores = document.getElementById('scores');
+    scores.innerHTML = '';
+
+    config.teams.forEach((team, i) => {
+      const div = document.createElement('div');
+      div.className = 'score' + (i === state.currentTeamIndex ? ' active' : '');
+      div.textContent = `${team}: ${state.scores[i]}`;
+      scores.appendChild(div);
+    });
+
+    document.getElementById('turnText').textContent = `Current turn: ${config.teams[state.currentTeamIndex]}`;
+  }
+
+  function renderBoard() {
+    const board = document.getElementById('board');
+    board.innerHTML = '';
+
+    config.questions.forEach(q => {
+      const tile = document.createElement('div');
+      tile.className = 'tile' + (state.used.includes(q.number) ? ' used' : '');
+      tile.textContent = state.used.includes(q.number) ? '' : q.number;
+      tile.onclick = () => {
+        if (!state.used.includes(q.number)) openQuestion(q.number);
+      };
+      board.appendChild(tile);
+    });
+  }
+
+  function renderTeamSelectors() {
+    const teamSelect = document.getElementById('teamSelect');
+    const passSelect = document.getElementById('passSelect');
+
+    teamSelect.innerHTML = '';
+    passSelect.innerHTML = '<option value="">No pass</option>';
+
+    config.teams.forEach((team, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = team;
+      if (i === state.currentTeamIndex) opt.selected = true;
+      teamSelect.appendChild(opt);
+
+      const passOpt = document.createElement('option');
+      passOpt.value = i;
+      passOpt.textContent = team;
+      passSelect.appendChild(passOpt);
+    });
+  }
+
+  function openQuestion(number) {
+    activeQuestion = config.questions.find(q => q.number === number);
+    if (!activeQuestion) return;
+
+    document.getElementById('questionLabel').textContent = `Question ${activeQuestion.number}`;
+    document.getElementById('questionText').textContent = activeQuestion.question;
+    document.getElementById('answerLabel').textContent = `Answer ${activeQuestion.number}`;
+    document.getElementById('answerText').textContent = activeQuestion.answer;
+    document.getElementById('answerPoints').textContent = formatPoints(activeQuestion.points);
+    document.getElementById('deltaInput').value = activeQuestion.points;
+
+    renderTeamSelectors();
+    showQuestion();
+  }
+
+  function showBoard() {
+    document.getElementById('board').classList.remove('hidden');
+    document.getElementById('questionScreen').classList.add('hidden');
+    document.getElementById('answerScreen').classList.add('hidden');
+    renderScores();
+    renderBoard();
+  }
+
+  function showQuestion() {
+    document.getElementById('board').classList.add('hidden');
+    document.getElementById('questionScreen').classList.remove('hidden');
+    document.getElementById('answerScreen').classList.add('hidden');
+  }
+
+  function showAnswer() {
+    document.getElementById('board').classList.add('hidden');
+    document.getElementById('questionScreen').classList.add('hidden');
+    document.getElementById('answerScreen').classList.remove('hidden');
+  }
+
+  function setCorrect() {
+    if (!activeQuestion) return;
+    document.getElementById('deltaInput').value = activeQuestion.points;
+  }
+
+  function setWrong() {
+    if (!activeQuestion) return;
+    document.getElementById('deltaInput').value = -Math.abs(Number(activeQuestion.points || 0));
+  }
+
+  function applyScore() {
+    if (!activeQuestion) return;
+
+    const payload = {
+      questionNumber: activeQuestion.number,
+      teamIndex: document.getElementById('teamSelect').value,
+      passToIndex: document.getElementById('passSelect').value,
+      delta: document.getElementById('deltaInput').value
+    };
+
+    google.script.run
+      .withSuccessHandler(data => {
+        config = data.config;
+        state = data.state;
+        activeQuestion = null;
+        renderGame();
+        showBoard();
+      })
+      .withFailureHandler(showError)
+      .applyUnfairResult(payload);
+  }
+
+  function markUsedNoScore() {
+    if (!activeQuestion) return;
+
+    google.script.run
+      .withSuccessHandler(data => {
+        config = data.config;
+        state = data.state;
+        activeQuestion = null;
+        renderGame();
+        showBoard();
+      })
+      .withFailureHandler(showError)
+      .markUnfairQuestionUsed(activeQuestion.number);
+  }
+
+  function resetGame() {
+    if (!confirm('Reset all scores and restore all used tiles?')) return;
+
+    google.script.run
+      .withSuccessHandler(data => {
+        config = data.config;
+        state = data.state;
+        renderGame();
+        showBoard();
+      })
+      .withFailureHandler(showError)
+      .resetUnfairGame();
+  }
+
+  function formatPoints(value) {
+    const n = Number(value || 0);
+    return `${n} ${Math.abs(n) === 1 ? 'point' : 'points'}`;
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function loadFromSlides() {
+    if (!confirm('Load questions, answers, and points from the current slides? This replaces the saved setup in the form.')) return;
+
+    google.script.run
+      .withSuccessHandler(data => {
+        config = data.config;
+        state = data.state;
+        savedConfigExists = true;
+        fillSetupFromConfig();
+        renderGame();
+        alert(data.message || 'Loaded from slides.');
+        showSetup();
+      })
+      .withFailureHandler(showError)
+      .loadUnfairGameSetupFromSlides();
+  }
+
+  function diagnoseLayout() {
+    google.script.run
+      .withSuccessHandler(info => {
+        alert(
+          `Slides found: ${info.slideCount}\n` +
+          `Board slide: ${info.boardSlideIndex || 'not found'}\n` +
+          `Question slides found: ${info.questionCount}\n` +
+          `Answer slides found: ${info.answerCount}\n` +
+          `Question 1 slide: ${info.question1SlideIndex || 'not found'}\n` +
+          `Answer 1 slide: ${info.answer1SlideIndex || 'not found'}`
+        );
+      })
+      .withFailureHandler(showError)
+      .diagnoseUnfairGameLayout();
+  }
+
+  function showError(err) {
+    alert(err.message || err);
+  }
+
+  loadData();
+</script>
+</body>
+</html>
