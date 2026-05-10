@@ -1,0 +1,220 @@
+<!doctype html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 12px;
+      color: #111;
+    }
+
+    h2, h3 {
+      margin: 8px 0;
+    }
+
+    button {
+      width: 100%;
+      margin: 6px 0;
+      padding: 9px;
+      border: 0;
+      border-radius: 8px;
+      background: #123c69;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button.gold {
+      background: #d99b00;
+      color: #111;
+    }
+
+    button.red {
+      background: #9f1239;
+      color: white;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 5px 0 10px;
+      padding: 7px;
+    }
+
+    textarea {
+      height: 260px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .score {
+      padding: 6px;
+      background: #f2f2f2;
+      margin: 4px 0;
+      border-radius: 6px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #555;
+    }
+
+    hr {
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <h2>Jeopardy Controller</h2>
+
+  <div id="gameStatus" class="small">Loading...</div>
+  <div id="scores"></div>
+
+  <h3>Score Question</h3>
+
+  <label>Question</label>
+  <select id="questionSelect" onchange="syncPointValue()"></select>
+
+  <label>Answering / selecting team</label>
+  <select id="teamSelect"></select>
+
+  <label>Signed point change</label>
+  <input id="deltaInput" type="number" value="100">
+  <div class="small">Use positive points for correct answers, negative points for wrong answers.</div>
+
+  <label>Pass points to another team</label>
+  <select id="passSelect"></select>
+
+  <button class="gold" onclick="applyScore()">Apply Score + Remove Cell</button>
+  <button onclick="markUsedOnly()">Remove Cell Only</button>
+  <button onclick="loadState()">Refresh</button>
+
+  <hr>
+
+  <h3>Build / Rebuild Game</h3>
+  <div class="small">Paste/edit the JSON below. Must have 6 categories and 5 questions each.</div>
+  <textarea id="configText"></textarea>
+  <button class="gold" onclick="buildGame()">Build Game From JSON</button>
+
+  <script>
+    function loadState() {
+      google.script.run
+        .withSuccessHandler(render)
+        .withFailureHandler(showError)
+        .getStateForSidebar();
+
+      google.script.run
+        .withSuccessHandler(sample => {
+          if (!document.getElementById('configText').value.trim()) {
+            document.getElementById('configText').value = sample;
+          }
+        })
+        .withFailureHandler(showError)
+        .getSampleConfig();
+    }
+
+    function render(data) {
+      const status = document.getElementById('gameStatus');
+      const scores = document.getElementById('scores');
+      const qSelect = document.getElementById('questionSelect');
+      const teamSelect = document.getElementById('teamSelect');
+      const passSelect = document.getElementById('passSelect');
+
+      scores.innerHTML = '';
+      qSelect.innerHTML = '';
+      teamSelect.innerHTML = '';
+      passSelect.innerHTML = '<option value="">No pass</option>';
+
+      if (!data.config || !data.state) {
+        status.textContent = 'No game built yet.';
+        return;
+      }
+
+      status.textContent = `Current turn: ${data.config.teams[data.state.currentTeamIndex]}`;
+
+      data.config.teams.forEach((team, i) => {
+        const div = document.createElement('div');
+        div.className = 'score';
+        div.textContent = `${team}: ${data.state.scores[i]}`;
+        scores.appendChild(div);
+
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = team;
+        if (i === data.state.currentTeamIndex) opt.selected = true;
+        teamSelect.appendChild(opt);
+
+        const passOpt = document.createElement('option');
+        passOpt.value = i;
+        passOpt.textContent = team;
+        passSelect.appendChild(passOpt);
+      });
+
+      data.config.categories.forEach((cat, c) => {
+        cat.questions.forEach((q, r) => {
+          const key = `C${c}Q${r}`;
+          if (data.state.used.includes(key)) return;
+
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.dataset.value = q.value;
+          opt.textContent = `${cat.name} — ${q.value}`;
+          qSelect.appendChild(opt);
+        });
+      });
+
+      syncPointValue();
+    }
+
+    function syncPointValue() {
+      const qSelect = document.getElementById('questionSelect');
+      const selected = qSelect.options[qSelect.selectedIndex];
+      if (selected) {
+        document.getElementById('deltaInput').value = selected.dataset.value;
+      }
+    }
+
+    function applyScore() {
+      const payload = {
+        questionKey: document.getElementById('questionSelect').value,
+        teamIndex: document.getElementById('teamSelect').value,
+        delta: document.getElementById('deltaInput').value,
+        passToIndex: document.getElementById('passSelect').value
+      };
+
+      google.script.run
+        .withSuccessHandler(render)
+        .withFailureHandler(showError)
+        .applyResult(payload);
+    }
+
+    function markUsedOnly() {
+      const key = document.getElementById('questionSelect').value;
+
+      google.script.run
+        .withSuccessHandler(render)
+        .withFailureHandler(showError)
+        .markQuestionUsed(key);
+    }
+
+    function buildGame() {
+      const config = document.getElementById('configText').value;
+
+      google.script.run
+        .withSuccessHandler(msg => {
+          alert(msg);
+          loadState();
+        })
+        .withFailureHandler(showError)
+        .buildGameFromConfig(config);
+    }
+
+    function showError(err) {
+      alert(err.message || err);
+    }
+
+    loadState();
+  </script>
+</body>
+</html>
